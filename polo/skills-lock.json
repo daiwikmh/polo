@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "yo-protocol-skills": {
+      "source": "yoprotocol/yo-protocol-skills",
+      "sourceType": "github",
+      "computedHash": "f98397a97222c8442d81bd4aecbfa983f48ba7e159730732354479fd88ad03f1"
+    }
+  }
+}
