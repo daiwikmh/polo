@@ -60,7 +60,7 @@ export default function ProfileButton() {
         chainConfigurations: [{ chain: base, transport: http(process.env.NEXT_PUBLIC_BASE_RPC_URL), version: getMEEVersion(MEEVersion.V2_1_0) }],
       });
     }).then((acct) => {
-      if (acct) setPredictedAddress(acct.addressOn(base.id));
+      if (acct) setPredictedAddress(acct.addressOn(base.id) ?? null);
     }).catch(() => {});
   }, [open, address, session]);
 
