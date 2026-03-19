@@ -1,8 +1,45 @@
 # Polo
 
-Autonomous yield optimization and vault guardian platform built on [YO Protocol](https://yo.xyz). Polo runs AI agents that scan DeFi vaults across chains, make yield decisions, bridge assets cross-chain, and protect capital with emergency redeems, all controllable from a dashboard or Telegram.
+**An AI-powered yield agent that autonomously manages deposits across YO Protocol vaults using Biconomy smart accounts, with real-time alerts and trading via Telegram.**
+
+Polo is an autonomous yield optimization and vault guardian platform built on [YO Protocol](https://yo.xyz). It runs AI agents that continuously scan ERC-4626 vaults across Base, Ethereum, and Arbitrum, making data-driven yield decisions and executing deposits, redeems, and cross-chain bridges without manual intervention. Users retain full custody through Biconomy Nexus smart accounts with scoped session keys, while the agent operates on their behalf. The entire system is controllable from a real-time dashboard or directly from Telegram.
 
 ![Polo Architecture](polo/public/yolo_work.png)
+
+## How It Works
+
+1. **Connect** your wallet on the dashboard and activate a Biconomy smart account
+2. **Fund** your smart account with tokens on Base
+3. **Start** the Yielder agent in SIM mode to preview decisions, or LIVE to execute real trades
+4. **Monitor** vault health with the Guardian agent that triggers emergency redeems if vaults become unsafe
+5. **Trade from Telegram** by linking your account and enabling trade buttons for one-tap deposits and redeems
+
+## AI Decision Engine
+
+Each scan cycle, the agent builds a structured snapshot of the current state and feeds it to an LLM (via OpenRouter) to decide what to do:
+
+**What the agent sees:**
+- Vault APYs (7d, 1d) and TVL across all chains
+- Current positions (shares held, estimated asset value)
+- Idle token balances available to deposit
+- Cross-chain bridge quotes (cost, estimated time, bridge provider)
+
+**How it decides:**
+- The LLM evaluates the full context and outputs a JSON array of decisions, each with an action, target vault/chain, amount, reason, and confidence score (0-100)
+- Minimum 1.5% APY to justify holding a position
+- Minimum 2.5% APY improvement required to trigger a redeem and switch
+- Bridge+deposit only recommended when yield advantage covers bridge cost
+- If the LLM is unavailable, a deterministic fallback kicks in: deposit idle tokens into any vault with >1.5% APY, hold existing positions above threshold, flag opportunities for unfunded vaults
+
+**Possible actions:**
+| Action | When |
+|--------|------|
+| `DEPOSIT` | Idle tokens on same chain as a high-APY vault |
+| `REDEEM_ALL` | Current position underperforming threshold |
+| `BRIDGE_AND_DEPOSIT` | Idle tokens on wrong chain, better APY elsewhere justifies bridge cost |
+| `HOLD` | Current position performing well |
+| `OPPORTUNITY` | High-APY vault but no tokens available to deposit |
+| `SKIP` | No action needed |
 
 ## Features
 
