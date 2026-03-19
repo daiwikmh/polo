@@ -15,9 +15,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BRAHMA — Autonomous Cross-Chain Yield Agent",
+  title: "Polo — Autonomous Yields on Yo",
   description:
-    "brahma scans USDC yields across Base, Arbitrum, Optimism, and Polygon — then moves your capital to the highest-earning Aave V3 pool automatically via LI.FI.",
+    "Polo scans USDC yields across Base, Ethereum — then moves your capital to the highest-earning Aave V3 pool automatically via LI.FI.",
 };
 
 export default function RootLayout({
