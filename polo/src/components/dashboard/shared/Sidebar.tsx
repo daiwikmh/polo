@@ -10,8 +10,8 @@ const Pologo = () => (
     src="/pol-removebg-preview.png"
     alt="Polo"
     style={{
-      width: 36,
-      height: 36,
+      width: 60,
+      height: 60,
       borderRadius: 8,
       objectFit: "contain",
       flexShrink: 0,

@@ -19,6 +19,7 @@ model UserSession {
   telegramToken       String?   // short-lived verification code
   telegramTokenExpiry DateTime? // token expires after 10 min
   telegramLinkedAt    DateTime? // when user linked
+  telegramTradeEnabled Boolean @default(false) // allow trading from Telegram
 
   @@unique([eoaAddress])
   @@index([smartAccountAddress])

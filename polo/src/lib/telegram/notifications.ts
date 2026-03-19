@@ -1,16 +1,15 @@
 // Telegram notification formatters for agent events
-import { sendMessage } from "./bot";
+import { sendMessage, sendMessageWithButtons } from "./bot";
 import { prisma } from "@/lib/db";
 
 const CHAIN_NAMES: Record<number, string> = { 8453: "Base", 1: "Ethereum", 42161: "Arbitrum" };
 
-// Lookup chat ID for a user by EOA
-async function getChatId(eoaAddress: string): Promise<string | null> {
-  const session = await prisma.userSession.findUnique({
+// Lookup user session for telegram
+async function getSession(eoaAddress: string) {
+  return prisma.userSession.findUnique({
     where: { eoaAddress: eoaAddress.toLowerCase() },
-    select: { telegramChatId: true },
+    select: { telegramChatId: true, telegramTradeEnabled: true, active: true },
   });
-  return session?.telegramChatId ?? null;
 }
 
 // Send trade notification after yielder executes
@@ -26,15 +25,15 @@ export async function notifyTrade(
     reason: string;
   },
 ) {
-  const chatId = await getChatId(eoaAddress);
-  if (!chatId) return;
+  const session = await getSession(eoaAddress);
+  if (!session?.telegramChatId) return;
 
   const chain = CHAIN_NAMES[trade.chainId] ?? String(trade.chainId);
   const tag = trade.simulation ? "[SIM] " : "";
   const tx = trade.txHash ? `\nTx: \`${trade.txHash.slice(0, 10)}...${trade.txHash.slice(-6)}\`` : "";
 
   const msg = `*Polo Agent*\n${tag}${trade.action} executed\nVault: ${trade.vault} (${chain})\nAmount: ${trade.amountHuman}${tx}\n_${trade.reason}_`;
-  await sendMessage(chatId, msg);
+  await sendMessage(session.telegramChatId, msg);
 }
 
 // Send evacuation alert from guardian
@@ -48,23 +47,23 @@ export async function notifyEvacuation(
     reason: string;
   },
 ) {
-  const chatId = await getChatId(eoaAddress);
-  if (!chatId) return;
+  const session = await getSession(eoaAddress);
+  if (!session?.telegramChatId) return;
 
   const chain = CHAIN_NAMES[evac.chainId] ?? String(evac.chainId);
   const tag = evac.simulation ? "[SIM] " : "";
 
   const msg = `*ALERT — Polo Guardian*\n${tag}Emergency redeem triggered\nVault: ${evac.vaultId} (${chain})\nRecovered: ${evac.assetsRedeemed}\n_${evac.reason}_`;
-  await sendMessage(chatId, msg);
+  await sendMessage(session.telegramChatId, msg);
 }
 
-// Send vault market summary
+// Send vault market summary with trade buttons if enabled
 export async function notifyMarketSummary(
   eoaAddress: string,
   vaults: { id: string; apy7d: string | null; symbol: string; chainId: number }[],
 ) {
-  const chatId = await getChatId(eoaAddress);
-  if (!chatId) return;
+  const session = await getSession(eoaAddress);
+  if (!session?.telegramChatId) return;
 
   const lines = vaults.map((v) => {
     const apy = v.apy7d ? `${parseFloat(v.apy7d).toFixed(2)}%` : "n/a";
@@ -73,18 +72,28 @@ export async function notifyMarketSummary(
   });
 
   const msg = `*Polo — Vault Snapshot*\nBest APY right now:\n\`\`\`\n${lines.join("\n")}\n\`\`\``;
-  await sendMessage(chatId, msg);
+
+  // If trading enabled and user has active session, show trade buttons
+  if (session.telegramTradeEnabled && session.active) {
+    const buttons = vaults.slice(0, 4).map((v) => ([
+      { text: `Deposit ${v.id}`, callback_data: `deposit:${v.id}:${v.chainId}` },
+      { text: `Redeem ${v.id}`, callback_data: `redeem:${v.id}:${v.chainId}` },
+    ]));
+    await sendMessageWithButtons(session.telegramChatId, msg, buttons);
+  } else {
+    await sendMessage(session.telegramChatId, msg);
+  }
 }
 
 // Notify agent started/stopped
 export async function notifyAgentEvent(eoaAddress: string, event: "started" | "stopped", mode?: string) {
-  const chatId = await getChatId(eoaAddress);
-  if (!chatId) return;
+  const session = await getSession(eoaAddress);
+  if (!session?.telegramChatId) return;
 
   const msg = event === "started"
     ? `*Polo Agent*\nAgent ${event} in ${mode ?? "SIMULATION"} mode`
     : `*Polo Agent*\nAgent ${event}`;
-  await sendMessage(chatId, msg);
+  await sendMessage(session.telegramChatId, msg);
 }
 
 // Send confirmation when Telegram is linked

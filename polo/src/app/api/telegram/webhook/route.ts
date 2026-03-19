@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { notifyLinked } from "@/lib/telegram/notifications";
+import { answerCallbackQuery } from "@/lib/telegram/bot";
+import { handleDepositStart, handleRedeemStart, handleAmountSelected, executeTrade } from "@/lib/telegram/trade";
 
 const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET ?? "";
 
@@ -16,6 +18,56 @@ export async function POST(req: Request) {
 
   try {
     const update = await req.json();
+
+    // Handle callback queries (inline button taps)
+    if (update.callback_query) {
+      const cb = update.callback_query;
+      const chatId = String(cb.message?.chat?.id);
+      const messageId = cb.message?.message_id;
+      const data = cb.data as string;
+
+      await answerCallbackQuery(cb.id);
+
+      if (data === "cancel") {
+        const { editMessage } = await import("@/lib/telegram/bot");
+        await editMessage(chatId, messageId, "Cancelled.");
+        return NextResponse.json({ ok: true });
+      }
+
+      // deposit:vaultId:chainId
+      if (data.startsWith("deposit:")) {
+        const [, vaultId, chainIdStr] = data.split(":");
+        await handleDepositStart(chatId, vaultId, Number(chainIdStr));
+        return NextResponse.json({ ok: true });
+      }
+
+      // redeem:vaultId:chainId
+      if (data.startsWith("redeem:")) {
+        const [, vaultId, chainIdStr] = data.split(":");
+        await handleRedeemStart(chatId, vaultId, Number(chainIdStr));
+        return NextResponse.json({ ok: true });
+      }
+
+      // amt:action:vaultId:chainId:amount — amount selected, show confirm
+      if (data.startsWith("amt:")) {
+        const [, action, vaultId, chainIdStr, amount] = data.split(":");
+        await handleAmountSelected(chatId, messageId, action, vaultId, Number(chainIdStr), amount);
+        return NextResponse.json({ ok: true });
+      }
+
+      // exec:action:vaultId:chainId[:amount] — confirmed, execute trade
+      if (data.startsWith("exec:")) {
+        const parts = data.split(":");
+        const [, action, vaultId, chainIdStr] = parts;
+        const amount = parts[4]; // optional for redeem
+        await executeTrade(chatId, messageId, action, vaultId, Number(chainIdStr), amount);
+        return NextResponse.json({ ok: true });
+      }
+
+      return NextResponse.json({ ok: true });
+    }
+
+    // Handle text messages
     const message = update?.message;
     if (!message?.text || !message?.chat?.id) {
       return NextResponse.json({ ok: true });
@@ -37,13 +89,11 @@ export async function POST(req: Request) {
       });
 
       if (!session) {
-        // Token expired or invalid — import bot inline to send error
         const { sendMessage } = await import("@/lib/telegram/bot");
         await sendMessage(chatId, "Link code expired or invalid. Generate a new one from the Polo dashboard.");
         return NextResponse.json({ ok: true });
       }
 
-      // Link telegram
       await prisma.userSession.update({
         where: { id: session.id },
         data: {
@@ -72,6 +122,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Telegram webhook error:", err);
-    return NextResponse.json({ ok: true }); // always 200 to Telegram
+    return NextResponse.json({ ok: true });
   }
 }

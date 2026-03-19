@@ -10,13 +10,14 @@ type TelegramState = {
   deepLink: string | null;
   token: string | null;
   polling: boolean;
+  tradeEnabled: boolean;
 };
 
 export default function TelegramButton() {
   const { address, isConnected } = useAccount();
   const [open, setOpen] = useState(false);
   const [tg, setTg] = useState<TelegramState>({
-    linked: false, linkedAt: null, deepLink: null, token: null, polling: false,
+    linked: false, linkedAt: null, deepLink: null, token: null, polling: false, tradeEnabled: false,
   });
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -26,7 +27,7 @@ export default function TelegramButton() {
     if (!address) return;
     fetch(`/api/telegram/status?address=${address}`)
       .then((r) => r.json())
-      .then((data) => setTg((prev) => ({ ...prev, linked: data.linked, linkedAt: data.linkedAt })))
+      .then((data) => setTg((prev) => ({ ...prev, linked: data.linked, linkedAt: data.linkedAt, tradeEnabled: data.tradeEnabled })))
       .catch(() => {});
   }, [address, open]);
 
@@ -82,13 +83,28 @@ export default function TelegramButton() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ eoaAddress: address }),
       });
-      setTg({ linked: false, linkedAt: null, deepLink: null, token: null, polling: false });
+      setTg({ linked: false, linkedAt: null, deepLink: null, token: null, polling: false, tradeEnabled: false });
     } catch {
       // ignore
     } finally {
       setLoading(false);
     }
   }, [address]);
+
+  const handleTradeToggle = useCallback(async () => {
+    if (!address) return;
+    const next = !tg.tradeEnabled;
+    setTg((prev) => ({ ...prev, tradeEnabled: next }));
+    try {
+      await fetch("/api/telegram/status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eoaAddress: address, tradeEnabled: next }),
+      });
+    } catch {
+      setTg((prev) => ({ ...prev, tradeEnabled: !next }));
+    }
+  }, [address, tg.tradeEnabled]);
 
   if (!isConnected) return null;
 
@@ -225,6 +241,51 @@ export default function TelegramButton() {
                         <span style={{ fontSize: 10, color: "#525252" }}>{item}</span>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Trade toggle */}
+                  <div style={{
+                    padding: "12px 14px",
+                    background: "#050504",
+                    borderRadius: 10,
+                    border: "1px solid #111",
+                    marginBottom: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}>
+                    <div>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "#a0a0a0", margin: 0 }}>
+                        Telegram Trading
+                      </p>
+                      <p style={{ fontSize: 9, color: "#525252", margin: "2px 0 0" }}>
+                        Execute trades from Telegram buttons
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleTradeToggle}
+                      style={{
+                        width: 40,
+                        height: 22,
+                        borderRadius: 11,
+                        border: "none",
+                        cursor: "pointer",
+                        background: tg.tradeEnabled ? "rgba(0,255,139,0.3)" : "#1a1a18",
+                        position: "relative",
+                        transition: "background 0.2s",
+                      }}
+                    >
+                      <div style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: "50%",
+                        background: tg.tradeEnabled ? "#00FF8B" : "#525252",
+                        position: "absolute",
+                        top: 3,
+                        left: tg.tradeEnabled ? 21 : 3,
+                        transition: "left 0.2s, background 0.2s",
+                      }} />
+                    </button>
                   </div>
 
                   <button
