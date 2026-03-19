@@ -21,6 +21,7 @@ import YoVaultScanner from "../yo/YoVaultScanner";
 import YoMerklPanel from "../yo/YoMerklPanel";
 import YoAgentPanel from "../yo/YoAgentPanel";
 import YoAgentControlPanel from "../yo/YoAgentControlPanel";
+import SmartAccountFundCard from "../yo/SmartAccountFundCard";
 import type { YoAgentState } from "@/lib/yo/yoAgent";
 
 const INITIAL_YO_AGENT: YoAgentState = {

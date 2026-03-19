@@ -39,6 +39,7 @@ export default function ProfileButton() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<Step>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [predictedAddress, setPredictedAddress] = useState<string | null>(null);
 
   // Fetch existing session
   useEffect(() => {
@@ -48,6 +49,20 @@ export default function ProfileButton() {
       .then((data) => setSession(data.session ?? null))
       .catch(() => setSession(null));
   }, [address, open]);
+
+  // Compute predicted smart account address when modal opens (counterfactual, no tx needed)
+  useEffect(() => {
+    if (!open || !address || session) return;
+    getWalletClient(wagmiConfig).then((wc) => {
+      if (!wc) return;
+      return toMultichainNexusAccount({
+        signer: wc as never,
+        chainConfigurations: [{ chain: base, transport: http(), version: getMEEVersion(MEEVersion.V2_1_0) }],
+      });
+    }).then((acct) => {
+      if (acct) setPredictedAddress(acct.addressOn(base.id));
+    }).catch(() => {});
+  }, [open, address, session]);
 
   // Activate smart account + grant session
   const handleActivate = useCallback(async () => {
@@ -430,6 +445,27 @@ export default function ProfileButton() {
                       Create a Biconomy smart account and grant the agent permission to deposit and redeem in YO vaults on your behalf. Your funds remain in your smart account at all times.
                     </p>
                   </div>
+
+                  {/* Smart account address + fund notice */}
+                  {predictedAddress && (
+                    <div style={{
+                      padding: "12px 14px",
+                      background: "rgba(255,175,79,0.04)",
+                      border: "1px solid rgba(255,175,79,0.15)",
+                      borderRadius: 10,
+                      marginBottom: 16,
+                    }}>
+                      <p style={{ fontSize: 9, color: "#FFAF4F", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 6px" }}>
+                        Your Smart Account Address
+                      </p>
+                      <p style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "#a0a0a0", margin: "0 0 8px", wordBreak: "break-all" }}>
+                        {predictedAddress}
+                      </p>
+                      <p style={{ fontSize: 10, color: "#FFAF4F", margin: 0, lineHeight: 1.5 }}>
+                        Send at least $1 USDC to this address on Base before activating — fees (~$0.055) are paid from here.
+                      </p>
+                    </div>
+                  )}
 
                   {/* Permissions summary */}
                   <div style={{

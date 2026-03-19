@@ -76,6 +76,13 @@ export async function POST(req: Request) {
     const chatId = String(message.chat.id);
     const text = message.text.trim();
 
+    // Handle plain /start (no token — bot already started, deep link didn't pass token)
+    if (text === "/start") {
+      const { sendMessage } = await import("@/lib/telegram/bot");
+      await sendMessage(chatId, "Welcome to Polo.\n\nTo connect, go to the dashboard, click *Telegram Alerts*, then type the 8-character code shown here.");
+      return NextResponse.json({ ok: true });
+    }
+
     // Handle /start TOKEN
     if (text.startsWith("/start ")) {
       const token = text.slice(7).trim();
