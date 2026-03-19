@@ -153,11 +153,15 @@ function FundWidget({ agentAddress }: { agentAddress: string }) {
 
 export default function YoAgentControlPanel({
   state,
+  smartAccountAddress,
 }: {
   state: YoAgentState;
   onAction: (action: string, data?: Record<string, unknown>) => Promise<string | null>;
+  smartAccountAddress?: string;
 }) {
-  const hasAddress = !!state.agentAddress;
+  // Smart account takes priority — it's what actually holds user funds
+  const fundAddress = smartAccountAddress || state.agentAddress || "";
+  const hasAddress = !!fundAddress;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -168,16 +172,16 @@ export default function YoAgentControlPanel({
           <div style={{ width: 32, height: 32, borderRadius: 10, background: "#D6FF34", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, color: "#000" }}>Y</div>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>Agent Wallet</div>
-            {state.agentAddress
+            {fundAddress
               ? <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "#525252", marginTop: 1 }}>
-                  {state.agentAddress.slice(0, 10)}…{state.agentAddress.slice(-6)}
+                  {fundAddress.slice(0, 10)}…{fundAddress.slice(-6)}
                 </div>
               : <div style={{ fontSize: 10, color: "#363634", marginTop: 1 }}>Start agent to reveal address</div>
             }
           </div>
-          {state.agentAddress && (
+          {fundAddress && (
             <button
-              onClick={() => navigator.clipboard.writeText(state.agentAddress)}
+              onClick={() => navigator.clipboard.writeText(fundAddress)}
               style={{ marginLeft: "auto", fontSize: 9, color: "#363634", background: "none", border: "none", cursor: "pointer", letterSpacing: "0.06em" }}
             >COPY</button>
           )}
@@ -188,7 +192,7 @@ export default function YoAgentControlPanel({
           <div style={{ padding: "12px 16px", borderBottom: "1px solid #111" }}>
             <p style={{ fontSize: 9, color: "#363634", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 8px" }}>Idle Balances</p>
             {FUND_TOKENS.map((t) => (
-              <AgentTokenBalance key={t.symbol} token={t} agentAddress={state.agentAddress} />
+              <AgentTokenBalance key={t.symbol} token={t} agentAddress={fundAddress} />
             ))}
             {state.tokenBalances.length === 0 && (
               <p style={{ fontSize: 10, color: "#363634", margin: 0 }}>No tokens held yet</p>
@@ -225,7 +229,7 @@ export default function YoAgentControlPanel({
         </div>
         <div style={{ padding: "12px 16px" }}>
           {hasAddress
-            ? <FundWidget agentAddress={state.agentAddress} />
+            ? <FundWidget agentAddress={fundAddress} />
             : <p style={{ fontSize: 11, color: "#363634", margin: 0, textAlign: "center" }}>Start agent first</p>
           }
         </div>

@@ -19,7 +19,7 @@ export const SUPPORTED_CHAINS: Record<number, ChainConfig> = {
   8453: {
     chainId: 8453,
     name: "Base",
-    rpcUrl: "https://base-mainnet.g.alchemy.com/v2/JtggWORoKiMdZdf8W5fOD",
+    rpcUrl: "https://base-mainnet.g.alchemy.com/v2/t7Oxw5b_OpDL6yQVWN70ZjxO6hTCaZeW",
     explorerUrl: "https://basescan.org",
     nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
   },
@@ -33,7 +33,7 @@ export const SUPPORTED_CHAINS: Record<number, ChainConfig> = {
   137: {
     chainId: 137,
     name: "Polygon",
-    rpcUrl: "https://polygon-mainnet.g.alchemy.com/v2/JtggWORoKiMdZdf8W5fOD",
+    rpcUrl: "https://polygon-mainnet.g.alchemy.com/v2/t7Oxw5b_OpDL6yQVWN70ZjxO6hTCaZeW",
     explorerUrl: "https://polygonscan.com",
     nativeCurrency: { name: "MATIC", symbol: "MATIC", decimals: 18 },
   },
@@ -121,8 +121,8 @@ export const YIELD_CHAINS: Record<
     aavePool: "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
     aToken: "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
     compoundComet: "0xb125E6687d4313864e53df431d5425969c15Eb2F",
-    rpcUrl: "https://base-mainnet.g.alchemy.com/v2/JtggWORoKiMdZdf8W5fOD",
-    txRpcUrl: "https://base-mainnet.g.alchemy.com/v2/JtggWORoKiMdZdf8W5fOD",
+    rpcUrl: "https://base-mainnet.g.alchemy.com/v2/t7Oxw5b_OpDL6yQVWN70ZjxO6hTCaZeW",
+    txRpcUrl: "https://base-mainnet.g.alchemy.com/v2/t7Oxw5b_OpDL6yQVWN70ZjxO6hTCaZeW",
   },
   42161: {
     chainId: 42161,
@@ -131,8 +131,8 @@ export const YIELD_CHAINS: Record<
     aavePool: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
     aToken: "0x724dc807b04555b71ed48a6896b6F41593b8C637",
     compoundComet: "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
-    rpcUrl: "https://arb-mainnet.g.alchemy.com/v2/JtggWORoKiMdZdf8W5fOD",
-    txRpcUrl: "https://arb-mainnet.g.alchemy.com/v2/JtggWORoKiMdZdf8W5fOD",
+    rpcUrl: "https://arb-mainnet.g.alchemy.com/v2/t7Oxw5b_OpDL6yQVWN70ZjxO6hTCaZeW",
+    txRpcUrl: "https://arb-mainnet.g.alchemy.com/v2/t7Oxw5b_OpDL6yQVWN70ZjxO6hTCaZeW",
   },
   10: {
     chainId: 10,
@@ -141,8 +141,8 @@ export const YIELD_CHAINS: Record<
     aavePool: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
     aToken: "0x38d693cE1dF5AaDF7bC62043aE5EF4e45a3d37Bd",
     compoundComet: "0x2e44e174f7D53F0212823acC11C01A11d58c5bCB",
-    rpcUrl: "https://opt-mainnet.g.alchemy.com/v2/JtggWORoKiMdZdf8W5fOD",
-    txRpcUrl: "https://opt-mainnet.g.alchemy.com/v2/JtggWORoKiMdZdf8W5fOD",
+    rpcUrl: "https://opt-mainnet.g.alchemy.com/v2/t7Oxw5b_OpDL6yQVWN70ZjxO6hTCaZeW",
+    txRpcUrl: "https://opt-mainnet.g.alchemy.com/v2/t7Oxw5b_OpDL6yQVWN70ZjxO6hTCaZeW",
   },
   137: {
     chainId: 137,
@@ -151,8 +151,8 @@ export const YIELD_CHAINS: Record<
     aavePool: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
     aToken: "0xA4D94019934D8333Ef880ABFFbF2FDd611C762BD",
     compoundComet: "0xF25212E676D1F7F89Cd72fFEe66158f541246445",
-    rpcUrl: "https://polygon-mainnet.g.alchemy.com/v2/JtggWORoKiMdZdf8W5fOD",
-    txRpcUrl: "https://polygon-mainnet.g.alchemy.com/v2/JtggWORoKiMdZdf8W5fOD",
+    rpcUrl: "https://polygon-mainnet.g.alchemy.com/v2/t7Oxw5b_OpDL6yQVWN70ZjxO6hTCaZeW",
+    txRpcUrl: "https://polygon-mainnet.g.alchemy.com/v2/t7Oxw5b_OpDL6yQVWN70ZjxO6hTCaZeW",
   },
 };
 

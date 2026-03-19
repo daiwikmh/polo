@@ -92,11 +92,11 @@ export async function executeSessionDeposit(
     userSmartAccountAddress,
   );
 
-  // Build approve + deposit calls
+  // Build approve + deposit calls (approve the vault to pull tokens)
   const approveData = encodeFunctionData({
     abi: VAULT_ABI,
     functionName: "approve",
-    args: [YO_GATEWAY, amount],
+    args: [vaultAddress, amount],
   });
 
   const depositData = encodeFunctionData({

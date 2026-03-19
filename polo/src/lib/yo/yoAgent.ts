@@ -14,9 +14,9 @@ import { notifyTrade, notifyAgentEvent, notifyMarketSummary } from "@/lib/telegr
 
 // ─── Chain RPC URLs ───────────────────────────────────────────────────────────
 const RPC: Record<number, string> = {
-  8453: process.env.BASE_RPC_URL ?? "https://base-mainnet.g.alchemy.com/v2/JtggWORoKiMdZdf8W5fOD",
+  8453: process.env.BASE_RPC_URL ?? "https://base-mainnet.g.alchemy.com/v2/t7Oxw5b_OpDL6yQVWN70ZjxO6hTCaZeW",
   1: process.env.ETH_RPC_URL ?? "https://eth.llamarpc.com",
-  42161: process.env.ARB_RPC_URL ?? "https://arb-mainnet.g.alchemy.com/v2/JtggWORoKiMdZdf8W5fOD",
+  42161: process.env.ARB_RPC_URL ?? "https://arb-mainnet.g.alchemy.com/v2/t7Oxw5b_OpDL6yQVWN70ZjxO6hTCaZeW",
 };
 
 const VIEM_CHAINS: Record<number, typeof base | typeof mainnet | typeof arbitrum> = {

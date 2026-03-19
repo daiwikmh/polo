@@ -57,7 +57,7 @@ export default function ProfileButton() {
       if (!wc) return;
       return toMultichainNexusAccount({
         signer: wc as never,
-        chainConfigurations: [{ chain: base, transport: http(), version: getMEEVersion(MEEVersion.V2_1_0) }],
+        chainConfigurations: [{ chain: base, transport: http(process.env.NEXT_PUBLIC_BASE_RPC_URL), version: getMEEVersion(MEEVersion.V2_1_0) }],
       });
     }).then((acct) => {
       if (acct) setPredictedAddress(acct.addressOn(base.id));
@@ -82,7 +82,7 @@ export default function ProfileButton() {
         chainConfigurations: [
           {
             chain: base,
-            transport: http(),
+            transport: http(process.env.NEXT_PUBLIC_BASE_RPC_URL),
             version: getMEEVersion(MEEVersion.V2_1_0),
           },
         ],
@@ -198,7 +198,7 @@ export default function ProfileButton() {
           smartAccountAddress,
           sessionDetails,
           expiresAt: new Date(expiresAt * 1000).toISOString(),
-        }),
+        }, (_, v) => typeof v === "bigint" ? `__bigint:${v.toString()}` : v),
       });
 
       if (!saveRes.ok) {

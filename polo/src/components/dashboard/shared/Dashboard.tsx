@@ -22,6 +22,11 @@ import YoMerklPanel from "../yo/YoMerklPanel";
 import YoAgentPanel from "../yo/YoAgentPanel";
 import YoAgentControlPanel from "../yo/YoAgentControlPanel";
 import SmartAccountFundCard from "../yo/SmartAccountFundCard";
+import { getWalletClient } from "@wagmi/core";
+import { wagmiConfig } from "@/lib/shared/wagmi";
+import { toMultichainNexusAccount, getMEEVersion, MEEVersion } from "@biconomy/abstractjs";
+import { http } from "viem";
+import { base } from "viem/chains";
 import type { YoAgentState } from "@/lib/yo/yoAgent";
 
 const INITIAL_YO_AGENT: YoAgentState = {
@@ -57,6 +62,29 @@ const INITIAL_GUARDIAN: GuardianAgentState = {
 export default function Dashboard() {
   const { address: userWalletAddress } = useAccount();
   const [yoAgentState, setYoAgentState] = useState<YoAgentState>(INITIAL_YO_AGENT);
+  const [smartAccountAddress, setSmartAccountAddress] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (!userWalletAddress) return;
+    // Check existing session first
+    fetch(`/api/session?address=${userWalletAddress}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.session?.smartAccountAddress) {
+          setSmartAccountAddress(data.session.smartAccountAddress);
+          return;
+        }
+        // Compute counterfactual address
+        return getWalletClient(wagmiConfig).then((wc) => {
+          if (!wc) return;
+          return toMultichainNexusAccount({
+            signer: wc as never,
+            chainConfigurations: [{ chain: base, transport: http(process.env.NEXT_PUBLIC_BASE_RPC_URL), version: getMEEVersion(MEEVersion.V2_1_0) }],
+          });
+        }).then((acct) => { if (acct) setSmartAccountAddress(acct.addressOn(base.id)); });
+      })
+      .catch(() => {});
+  }, [userWalletAddress]);
   const [guardianState, setGuardianState] = useState<GuardianAgentState>(INITIAL_GUARDIAN);
   const [mode, setMode] = useState<"guardian" | "yield">("yield");
   const [leftOpen, setLeftOpen] = useState(true);
@@ -312,8 +340,8 @@ export default function Dashboard() {
           flexDirection: "column",
           gap: 12,
         }}>
-          <SmartAccountFundCard />
-          <YoAgentControlPanel state={yoAgentState} onAction={handleYoAgentAction} />
+          <SmartAccountFundCard smartAccountAddress={smartAccountAddress} />
+          <YoAgentControlPanel state={yoAgentState} onAction={handleYoAgentAction} smartAccountAddress={smartAccountAddress} />
         </aside>
       )}
 

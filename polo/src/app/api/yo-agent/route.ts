@@ -9,6 +9,18 @@ import {
 } from "@/lib/yo/yoAgent";
 import { prisma } from "@/lib/db";
 
+// Restore BigInts that were tagged during serialization
+function restoreBigInts(obj: unknown): unknown {
+  if (typeof obj === "string" && obj.startsWith("__bigint:")) return BigInt(obj.slice(9));
+  if (Array.isArray(obj)) return obj.map(restoreBigInts);
+  if (obj && typeof obj === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj)) out[k] = restoreBigInts(v);
+    return out;
+  }
+  return obj;
+}
+
 export async function GET() {
   return NextResponse.json(getYoAgentState());
 }
@@ -45,7 +57,7 @@ export async function POST(req: Request) {
               agentSignerKey,
               userSmartAccountAddress: session.smartAccountAddress,
               userEoa: session.eoaAddress,
-              sessionDetails: session.sessionDetails as never[],
+              sessionDetails: restoreBigInts(session.sessionDetails) as never[],
               pollIntervalMs: body.pollIntervalMs ?? Number(process.env.YO_POLL_INTERVAL_MS ?? 90_000),
               mode: body.mode ?? "SIMULATION",
             });
