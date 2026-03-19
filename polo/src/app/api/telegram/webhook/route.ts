@@ -119,6 +119,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
+    // Handle plain text token (user types code directly or deep link resends token separately)
+    if (/^[0-9a-f]{8}$/.test(text)) {
+      const session = await prisma.userSession.findFirst({
+        where: {
+          telegramToken: text,
+          telegramTokenExpiry: { gte: new Date() },
+        },
+      });
+
+      if (!session) {
+        const { sendMessage } = await import("@/lib/telegram/bot");
+        await sendMessage(chatId, "Link code expired or invalid. Generate a new one from the Polo dashboard.");
+        return NextResponse.json({ ok: true });
+      }
+
+      await prisma.userSession.update({
+        where: { id: session.id },
+        data: {
+          telegramChatId: chatId,
+          telegramToken: null,
+          telegramTokenExpiry: null,
+          telegramLinkedAt: new Date(),
+        },
+      });
+
+      await notifyLinked(chatId);
+      return NextResponse.json({ ok: true });
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Telegram webhook error:", err);
