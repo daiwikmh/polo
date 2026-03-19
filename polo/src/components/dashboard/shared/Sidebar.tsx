@@ -50,7 +50,10 @@ export default function Sidebar({
         padding: "20px 18px 16px",
         borderBottom: "1px solid #1a1a18",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <a
+          href="https://polo-x.vercel.app/"
+          style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}
+        >
           <Pologo />
           <div>
             <h1 style={{
@@ -73,7 +76,7 @@ export default function Sidebar({
               yield optimizer
             </p>
           </div>
-        </div>
+        </a>
       </div>
 
       {/* Mode tabs — stacked */}
