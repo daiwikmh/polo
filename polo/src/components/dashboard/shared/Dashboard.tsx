@@ -308,7 +308,11 @@ export default function Dashboard() {
           height: "100vh",
           overflowY: "scroll",
           padding: "12px 12px 12px 0",
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
         }}>
+          <SmartAccountFundCard />
           <YoAgentControlPanel state={yoAgentState} onAction={handleYoAgentAction} />
         </aside>
       )}
