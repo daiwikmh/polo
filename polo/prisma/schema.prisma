@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model UserSession {
+  id                  String    @id @default(cuid())
+  eoaAddress          String    // user's EOA wallet address
+  smartAccountAddress String    // Biconomy Nexus smart account address on Base
+  sessionDetails      Json      // serialized SessionDetail[] from Biconomy
+  active              Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  expiresAt           DateTime
+  telegramChatId      String?   // Telegram chat ID once linked
+  telegramToken       String?   // short-lived verification code
+  telegramTokenExpiry DateTime? // token expires after 10 min
+  telegramLinkedAt    DateTime? // when user linked
+
+  @@unique([eoaAddress])
+  @@index([smartAccountAddress])
+  @@index([active])
+  @@index([telegramToken])
+}

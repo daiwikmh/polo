@@ -1,25 +1,22 @@
 "use client";
 
 import WalletButton from "./WalletButton";
+import ProfileButton from "./ProfileButton";
+import TelegramButton from "./TelegramButton";
 
-// YO wordmark — black on neon
+// Polo horse logo
 const Pologo = () => (
-  <div style={{
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    background: "#D6FF34",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 16,
-    fontWeight: 700,
-    color: "#000",
-    letterSpacing: "-0.04em",
-    flexShrink: 0,
-  }}>
-    yo
-  </div>
+  <img
+    src="/pol-removebg-preview.png"
+    alt="Polo"
+    style={{
+      width: 36,
+      height: 36,
+      borderRadius: 8,
+      objectFit: "contain",
+      flexShrink: 0,
+    }}
+  />
 );
 
 export default function Sidebar({
@@ -79,10 +76,11 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Mode tabs */}
+      {/* Mode tabs — stacked */}
       <div style={{ padding: "12px 12px 8px" }}>
         <div style={{
           display: "flex",
+          flexDirection: "column",
           background: "#0a0a08",
           borderRadius: 10,
           padding: 3,
@@ -92,8 +90,8 @@ export default function Sidebar({
           <button
             onClick={() => onModeChange("yield")}
             style={{
-              flex: 1,
-              padding: "8px",
+              width: "100%",
+              padding: "10px 12px",
               borderRadius: 8,
               fontSize: 11,
               fontWeight: 700,
@@ -104,6 +102,7 @@ export default function Sidebar({
               borderColor: mode === "yield" ? "rgba(214,255,52,0.2)" : "transparent",
               letterSpacing: "0.03em",
               transition: "all 0.15s",
+              textAlign: "left",
             }}
           >
             Yielder
@@ -111,8 +110,8 @@ export default function Sidebar({
           <button
             onClick={() => onModeChange("guardian")}
             style={{
-              flex: 1,
-              padding: "8px",
+              width: "100%",
+              padding: "10px 12px",
               borderRadius: 8,
               fontSize: 11,
               fontWeight: 700,
@@ -123,18 +122,12 @@ export default function Sidebar({
               borderColor: mode === "guardian" ? "#2a2a28" : "transparent",
               letterSpacing: "0.03em",
               transition: "all 0.15s",
+              textAlign: "left",
             }}
           >
             Guardian
           </button>
         </div>
-      </div>
-
-      {/* Nav section label */}
-      <div style={{ padding: "12px 18px 6px" }}>
-        <span style={{ fontSize: 9, color: "#363634", textTransform: "uppercase", letterSpacing: "0.2em" }}>
-          {isYield ? "Vaults · Base" : "Position Monitor"}
-        </span>
       </div>
 
       {/* Vault links */}
@@ -228,6 +221,16 @@ export default function Sidebar({
       {/* Wallet */}
       <div style={{ borderTop: "1px solid #1a1a18" }}>
         <WalletButton />
+      </div>
+
+      {/* Profile / Smart Account */}
+      <div style={{ borderTop: "1px solid #1a1a18" }}>
+        <ProfileButton />
+      </div>
+
+      {/* Telegram Alerts */}
+      <div style={{ borderTop: "1px solid #1a1a18" }}>
+        <TelegramButton />
       </div>
 
       {/* Merkl indicator */}

@@ -16,12 +16,12 @@ function LogLine({ log }: { log: LogEntry }) {
   });
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-      <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "#2a2a28", flexShrink: 0, marginTop: 1 }}>
+      <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "#525252", flexShrink: 0, marginTop: 1 }}>
         {ts}
       </span>
-      <span style={{
+      <span className={log.level === "INFO" ? "yo-text-white" : undefined} style={{
         fontSize: 11, fontFamily: "var(--font-mono)",
-        color: LEVEL_COLOR[log.level] ?? "#363634",
+        color: log.level === "INFO" ? undefined : LEVEL_COLOR[log.level],
         lineHeight: 1.5, wordBreak: "break-word",
       }}>
         {log.message}
@@ -67,7 +67,7 @@ export default function YoAgentPanel({ state }: { state: YoAgentState }) {
         color: "aaaaa2"
       }}>
         {visible.length === 0 ? (
-          <span style={{ fontSize: 11, color: "#aaaaa2", fontFamily: "var(--font-mono)" }}>
+          <span className="yo-text-white" style={{ fontSize: 11, fontFamily: "var(--font-mono)" }}>
             Waiting for agent to start...
           </span>
         ) : (

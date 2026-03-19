@@ -1,0 +1,5 @@
+{
+  "name": "yolo-workspace",
+  "private": true,
+  "workspaces": ["polo"]
+}

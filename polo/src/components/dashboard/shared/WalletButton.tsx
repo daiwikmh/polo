@@ -11,11 +11,28 @@ export default function WalletButton() {
   const { data: balance } = useBalance({ address });
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Position dropdown relative to trigger button
+  useEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setDropdownStyle({
+      top: rect.bottom + 6,
+      left: rect.left,
+      width: rect.width,
+    });
+  }, [open]);
+
+  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target as Node) &&
+        dropdownRef.current && !dropdownRef.current.contains(e.target as Node)
+      ) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -41,8 +58,9 @@ export default function WalletButton() {
             onClick={() => connect({ connector })}
             disabled={isPending}
             className="wallet-connect"
+            style={{ fontSize: 12 }}
           >
-            <Wallet className="w-4 h-4" />
+            <Wallet className="w-3.5 h-3.5" />
             {isPending ? "Connecting..." : `Connect ${connector.name}`}
           </button>
         ))}
@@ -51,29 +69,29 @@ export default function WalletButton() {
   }
 
   return (
-    <div ref={ref} className="p-3 relative">
-      <button onClick={() => setOpen(!open)} className="wallet-trigger">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="wallet-avatar"><Wallet /></div>
+    <div className="p-3">
+      <button ref={triggerRef} onClick={() => setOpen(!open)} className="wallet-trigger">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="wallet-avatar"><Wallet className="w-3 h-3" /></div>
           <div className="text-left min-w-0">
             <p className="wallet-addr truncate">{truncate(address!)}</p>
             <p className="wallet-chain">{chain?.name ?? "Unknown"}</p>
           </div>
         </div>
         <ChevronDown
-          className="w-3.5 h-3.5 transition-transform duration-200"
-          style={{ color: "var(--text-muted)", transform: open ? "rotate(180deg)" : "none" }}
+          className="w-3 h-3 transition-transform duration-200"
+          style={{ color: "var(--text-muted)", transform: open ? "rotate(180deg)" : "none", flexShrink: 0 }}
         />
       </button>
 
       {open && (
-        <div className="wallet-dropdown">
+        <div ref={dropdownRef} className="wallet-dropdown" style={dropdownStyle}>
           <div className="wallet-balance">
             <p className="wallet-balance-label">Balance</p>
             <p className="wallet-balance-value">
               {balance
                 ? `${(Number(balance.value) / 10 ** balance.decimals).toFixed(4)} ${balance.symbol}`
-                : "..."}
+                : "—"}
             </p>
           </div>
           <div className="p-1.5">

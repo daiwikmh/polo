@@ -3,17 +3,21 @@
 import { useState } from "react";
 import { useVaults } from "@yo-protocol/react";
 import type { VaultStatsItem } from "@yo-protocol/core";
-import { YO_VAULTS, formatYield } from "@/lib/yo/vaults";
+import {
+  ALL_YO_VAULT_CONFIGS,
+  ALL_YO_VAULT_IDS,
+  YO_SUPPORTED_CHAIN_IDS,
+  YO_VAULT_CHAIN_COMBOS,
+  CHAIN_NAMES,
+  CHAIN_COLORS,
+  formatYield,
+  formatTvl,
+  formatTvlToken,
+} from "@/lib/yo/vaults";
 import YoDepositPanel from "./YoDepositPanel";
 
-const VAULT_COLORS: Record<string, string> = {
-  yoUSD: "#00FF8B",
-  yoETH: "#D6FF34",
-  yoBTC: "#FFAF4F",
-  yoEUR: "#4E6FFF",
-};
-
-const YO_VAULT_IDS: string[] = YO_VAULTS.map((v) => v.id);
+const VAULT_ORDER = ["yoUSD", "yoETH", "yoBTC", "yoEUR", "yoGOLD", "yoUSDT"];
+const CHAIN_ORDER = [8453, 1, 42161];
 
 function Skeleton() {
   return (
@@ -29,64 +33,98 @@ function Skeleton() {
   );
 }
 
+function ChainBadge({ chainId }: { chainId: number }) {
+  const name = CHAIN_NAMES[chainId] ?? `Chain ${chainId}`;
+  const color = CHAIN_COLORS[chainId] ?? "#525252";
+  return (
+    <span style={{
+      fontSize: 9, padding: "2px 7px", borderRadius: 99,
+      border: `1px solid ${color}40`,
+      background: `${color}12`,
+      color,
+      fontFamily: "var(--font-mono)",
+      letterSpacing: "0.04em",
+      whiteSpace: "nowrap",
+    }}>
+      {name}
+    </span>
+  );
+}
+
 function VaultRow({
   vault,
-  cfg,
+  vaultId,
+  chainId,
   selected,
   onSelect,
   isLoading,
 }: {
   vault: VaultStatsItem | undefined;
-  cfg: (typeof YO_VAULTS)[number];
+  vaultId: string;
+  chainId: number;
   selected: boolean;
   onSelect: () => void;
   isLoading: boolean;
 }) {
-  const color = VAULT_COLORS[cfg.id] ?? "#D6FF34";
-  const tvl = vault?.tvl?.formatted ?? (isLoading ? null : "—");
+  const cfg = ALL_YO_VAULT_CONFIGS[vaultId];
+  const color = cfg?.color ?? "#D6FF34";
+  const canDeposit = chainId === 8453;
+
+  const tvlRaw = vault?.tvl?.formatted;
+  const underlying = cfg?.underlying ?? "";
+  const isStable = ["USDC", "USDT", "EURC"].includes(underlying);
+  const tvl = tvlRaw != null
+    ? (isStable ? formatTvl(Number(tvlRaw)) : formatTvlToken(Number(tvlRaw), underlying))
+    : (isLoading ? null : "—");
   const apy7d = vault?.yield?.["7d"];
   const apy1d = vault?.yield?.["1d"];
   const sharePrice = vault?.sharePrice?.formatted ?? (isLoading ? null : "—");
 
   return (
     <tr
-      onClick={onSelect}
+      onClick={canDeposit ? onSelect : undefined}
       style={{
-        cursor: "pointer",
+        cursor: canDeposit ? "pointer" : "default",
         background: selected ? `${color}08` : "transparent",
         borderBottom: "1px solid #111",
         transition: "background 0.15s",
+        opacity: canDeposit ? 1 : 0.75,
       }}
     >
       {/* Vault */}
-      <td style={{ padding: "14px 16px" }}>
+      <td style={{ padding: "12px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
-            width: 32, height: 32, borderRadius: 8,
+            width: 30, height: 30, borderRadius: 8,
             background: `${color}14`, border: `1px solid ${color}30`,
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 11, fontWeight: 700, color, letterSpacing: "-0.03em",
+            fontSize: 10, fontWeight: 700, color, letterSpacing: "-0.03em",
           }}>
-            {cfg.underlying[0]}
+            {cfg?.underlying[0] ?? "?"}
           </div>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#fff", letterSpacing: "-0.02em" }}>{cfg.id}</div>
-            <div style={{ fontSize: 11, color: "#525252", marginTop: 1 }}>{cfg.underlying}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#fff", letterSpacing: "-0.02em" }}>{vaultId}</div>
+            <div style={{ fontSize: 10, color: "#525252", marginTop: 1 }}>{cfg?.underlying ?? "—"}</div>
           </div>
         </div>
       </td>
 
+      {/* Chain */}
+      <td style={{ padding: "12px 16px" }}>
+        <ChainBadge chainId={chainId} />
+      </td>
+
       {/* TVL */}
-      <td style={{ padding: "14px 16px" }}>
+      <td style={{ padding: "12px 16px" }}>
         <span style={{ fontSize: 13, fontFamily: "var(--font-mono)", color: "#a0a0a0" }}>
           {tvl == null ? <Skeleton /> : tvl}
         </span>
       </td>
 
       {/* 7d APY */}
-      <td style={{ padding: "14px 16px" }}>
+      <td style={{ padding: "12px 16px" }}>
         <span style={{
-          fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)",
+          fontSize: 15, fontWeight: 700, fontFamily: "var(--font-mono)",
           color: apy7d != null ? color : "#525252",
           textShadow: apy7d != null ? `0 0 12px ${color}40` : "none",
         }}>
@@ -95,34 +133,44 @@ function VaultRow({
       </td>
 
       {/* 1d APY */}
-      <td style={{ padding: "14px 16px" }}>
-        <span style={{ fontSize: 13, fontFamily: "var(--font-mono)", color: "#525252" }}>
+      <td style={{ padding: "12px 16px" }}>
+        <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "#525252" }}>
           {apy1d == null && isLoading ? <Skeleton /> : formatYield(apy1d)}
         </span>
       </td>
 
       {/* Share Price */}
-      <td style={{ padding: "14px 16px" }}>
-        <span style={{ fontSize: 12, fontFamily: "var(--font-mono)", color: "#525252" }}>
+      <td style={{ padding: "12px 16px" }}>
+        <span className="yo-text-white" style={{ fontSize: 12, fontFamily: "var(--font-mono)" }}>
           {sharePrice == null ? <Skeleton /> : sharePrice}
         </span>
       </td>
 
       {/* Action */}
-      <td style={{ padding: "14px 16px", textAlign: "right" }}>
-        <button
-          onClick={(e) => { e.stopPropagation(); onSelect(); }}
-          style={{
-            padding: "6px 14px", borderRadius: 6,
-            border: `1px solid ${selected ? color : "#1e1e1c"}`,
-            background: selected ? `${color}14` : "transparent",
-            color: selected ? color : "#525252",
-            fontSize: 11, fontWeight: 700, letterSpacing: "0.05em",
-            cursor: "pointer", transition: "all 0.15s",
-          }}
-        >
-          {selected ? "SELECTED" : "DEPOSIT"}
-        </button>
+      <td style={{ padding: "12px 16px", textAlign: "right" }}>
+        {canDeposit ? (
+          <button
+            onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            style={{
+              padding: "5px 12px", borderRadius: 6,
+              border: `1px solid ${selected ? color : "#1e1e1c"}`,
+              background: selected ? `${color}14` : "transparent",
+              color: selected ? color : "#525252",
+              fontSize: 10, fontWeight: 700, letterSpacing: "0.05em",
+              cursor: "pointer", transition: "all 0.15s",
+            }}
+          >
+            {selected ? "SELECTED" : "DEPOSIT"}
+          </button>
+        ) : (
+          <span style={{
+            fontSize: 9, padding: "4px 8px", borderRadius: 99,
+            border: "1px solid #1e1e1c", color: "#363634",
+            fontFamily: "var(--font-mono)", letterSpacing: "0.06em",
+          }}>
+            BASE ONLY
+          </span>
+        )}
       </td>
     </tr>
   );
@@ -133,12 +181,23 @@ export default function YoVaultScanner() {
   const [open, setOpen] = useState(true);
   const { vaults, isLoading } = useVaults();
 
-  // Filter to Base chain (8453) YO vaults
-  const baseVaults = vaults.filter(
-    (v) => v.chain.id === 8453 && YO_VAULT_IDS.includes(v.id)
+  const allVaults = vaults.filter(
+    (v) => (YO_SUPPORTED_CHAIN_IDS as readonly number[]).includes(v.chain.id) && ALL_YO_VAULT_IDS.includes(v.id)
   );
 
+  const sortedVaults = [...allVaults].sort((a, b) => {
+    const idxA = VAULT_ORDER.indexOf(a.id);
+    const idxB = VAULT_ORDER.indexOf(b.id);
+    if (idxA !== idxB) return idxA - idxB;
+    return CHAIN_ORDER.indexOf(a.chain.id) - CHAIN_ORDER.indexOf(b.chain.id);
+  });
+
   const handleSelect = (id: string) => setSelectedVault((p) => (p === id ? null : id));
+
+  // Rows to render: live data when loaded, skeleton combos while loading
+  const rows: Array<{ vaultId: string; chainId: number; vault?: VaultStatsItem }> = isLoading
+    ? YO_VAULT_CHAIN_COMBOS.map((c) => ({ vaultId: c.id, chainId: c.chainId }))
+    : sortedVaults.map((v) => ({ vaultId: v.id, chainId: v.chain.id, vault: v }));
 
   return (
     <div style={{ background: "#0a0a08", border: "1px solid #1a1a18", borderRadius: 16, overflow: "hidden" }}>
@@ -163,7 +222,7 @@ export default function YoVaultScanner() {
             fontSize: 10, padding: "2px 8px", borderRadius: 99,
             border: "1px solid #1e1e1c", color: "#525252", fontFamily: "var(--font-mono)",
           }}>
-            Base · {YO_VAULTS.length} vaults
+            {isLoading ? `${YO_VAULT_CHAIN_COMBOS.length} vaults` : `${rows.length} vaults · 3 chains`}
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -182,13 +241,14 @@ export default function YoVaultScanner() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid #111" }}>
-                  {["Vault", "TVL", "7d APY", "1d APY", "Share Price", ""].map((h) => (
+                  {["Vault", "Chain", "TVL", "7d APY", "1d APY", "Share Price", ""].map((h) => (
                     <th
                       key={h}
                       style={{
                         padding: "10px 16px", fontSize: 10, fontWeight: 500,
                         color: "#525252", textTransform: "uppercase", letterSpacing: "0.1em",
                         textAlign: h === "" ? "right" : "left",
+                        whiteSpace: "nowrap",
                       }}
                     >
                       {h}
@@ -197,19 +257,17 @@ export default function YoVaultScanner() {
                 </tr>
               </thead>
               <tbody>
-                {YO_VAULTS.map((cfg) => {
-                  const vault = baseVaults.find((v) => v.id === cfg.id);
-                  return (
-                    <VaultRow
-                      key={cfg.id}
-                      vault={vault}
-                      cfg={cfg}
-                      selected={selectedVault === cfg.id}
-                      onSelect={() => handleSelect(cfg.id)}
-                      isLoading={isLoading}
-                    />
-                  );
-                })}
+                {rows.map(({ vaultId, chainId, vault }) => (
+                  <VaultRow
+                    key={`${vaultId}:${chainId}`}
+                    vault={vault}
+                    vaultId={vaultId}
+                    chainId={chainId}
+                    selected={selectedVault === vaultId && chainId === 8453}
+                    onSelect={() => handleSelect(vaultId)}
+                    isLoading={isLoading}
+                  />
+                ))}
               </tbody>
             </table>
           </div>
@@ -225,7 +283,7 @@ export default function YoVaultScanner() {
 
           <div style={{ padding: "10px 20px", borderTop: "1px solid #111", display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 9, color: "#363634", letterSpacing: "0.1em" }}>
-              POWERED BY YO PROTOCOL · ERC-4626 · BASE CHAIN · PARTNER ID 9999
+              POWERED BY YO PROTOCOL · ERC-4626 · ETHEREUM · BASE · ARBITRUM · DEPOSITS ON BASE ONLY
             </span>
           </div>
         </>

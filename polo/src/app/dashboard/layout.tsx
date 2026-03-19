@@ -3,5 +3,5 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="dashboard-root">{children}</div>;
+  return <div className="dashboard-root" style={{ height: "100%" }}>{children}</div>;
 }

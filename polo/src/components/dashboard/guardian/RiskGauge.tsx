@@ -1,16 +1,18 @@
 "use client";
 
-import type { RiskAssessment } from "@/types";
+import type { GuardianSnapshot } from "@/lib/guardian/monitor";
 
-export default function RiskGauge({ risk }: { risk: RiskAssessment | null }) {
-  const score = risk?.riskScore ?? 0;
-  const level = risk?.riskLevel ?? "N/A";
+export default function RiskGauge({ snapshot }: { snapshot: GuardianSnapshot | null }) {
+  const score = snapshot?.overallScore ?? 0;
+  const level = snapshot?.overallRisk ?? "N/A";
 
+  // Inverted: 0 = healthy (green), 100 = emergency (red)
   const getColor = () => {
-    if (score < 30) return { main: "#22c55e", glow: "rgba(34,197,94,0.3)" };
-    if (score < 60) return { main: "#eab308", glow: "rgba(234,179,8,0.3)" };
-    if (score < 85) return { main: "#f97316", glow: "rgba(249,115,22,0.3)" };
-    return { main: "#ef4444", glow: "rgba(239,68,68,0.3)" };
+    if (score < 15) return { main: "#22c55e", glow: "rgba(34,197,94,0.3)" };
+    if (score < 40) return { main: "#eab308", glow: "rgba(234,179,8,0.3)" };
+    if (score < 70) return { main: "#f97316", glow: "rgba(249,115,22,0.3)" };
+    if (score > 0) return { main: "#ef4444", glow: "rgba(239,68,68,0.3)" };
+    return { main: "#525252", glow: "rgba(82,82,82,0.2)" };
   };
 
   const colors = getColor();
@@ -43,9 +45,9 @@ export default function RiskGauge({ risk }: { risk: RiskAssessment | null }) {
       </div>
 
       <div className="mt-4 text-center">
-        <p className="gauge-value" style={{ color: colors.main }}>{score.toFixed(1)}%</p>
+        <p className="gauge-value" style={{ color: colors.main }}>{score.toFixed(0)}%</p>
         <p className="gauge-level mt-1">
-          Level: <span style={{ color: colors.main, fontWeight: 600 }}>{level}</span>
+          <span style={{ color: colors.main, fontWeight: 600 }}>{level}</span>
         </p>
       </div>
     </div>

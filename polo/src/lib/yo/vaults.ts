@@ -1,9 +1,50 @@
-// Yo Protocol vault registry for Base (chain 8453)
+// Yo Protocol vault registry
 // Source: https://docs.yo.xyz / yo-protocol-cli SKILL.md
 
-export const YO_CHAIN_ID = 8453 as const;
+export const YO_CHAIN_ID = 8453 as const; // execution chain (Base)
+export const YO_EXECUTION_CHAIN_ID = 8453 as const;
+export const YO_SUPPORTED_CHAIN_IDS = [1, 8453, 42161] as const;
 
 export const YO_GATEWAY = "0xF1EeE0957267b1A474323Ff9CfF7719E964969FA" as const;
+
+export const CHAIN_NAMES: Record<number, string> = {
+  1: "Ethereum",
+  8453: "Base",
+  42161: "Arbitrum",
+};
+
+export const CHAIN_COLORS: Record<number, string> = {
+  1: "#627EEA",
+  8453: "#0052FF",
+  42161: "#28A0F0",
+};
+
+// Static config for all vaults across all supported chains
+export const ALL_YO_VAULT_CONFIGS: Record<string, { underlying: string; color: string }> = {
+  yoUSD:  { underlying: "USDC",  color: "#00FF8B" },
+  yoETH:  { underlying: "WETH",  color: "#D6FF34" },
+  yoBTC:  { underlying: "cbBTC", color: "#FFAF4F" },
+  yoEUR:  { underlying: "EURC",  color: "#4E6FFF" },
+  yoGOLD: { underlying: "XAUt",  color: "#FFD700" },
+  yoUSDT: { underlying: "USDT",  color: "#26A17B" },
+};
+
+export const ALL_YO_VAULT_IDS = Object.keys(ALL_YO_VAULT_CONFIGS);
+
+// Expected vault-chain combos (for skeleton loading state)
+export const YO_VAULT_CHAIN_COMBOS = [
+  { id: "yoUSD",  chainId: 8453 },
+  { id: "yoUSD",  chainId: 1 },
+  { id: "yoUSD",  chainId: 42161 },
+  { id: "yoETH",  chainId: 8453 },
+  { id: "yoETH",  chainId: 1 },
+  { id: "yoBTC",  chainId: 8453 },
+  { id: "yoBTC",  chainId: 1 },
+  { id: "yoEUR",  chainId: 8453 },
+  { id: "yoEUR",  chainId: 1 },
+  { id: "yoGOLD", chainId: 1 },
+  { id: "yoUSDT", chainId: 1 },
+] as const;
 
 export const YO_VAULTS = [
   {
@@ -55,6 +96,13 @@ export function formatTvl(value: number): string {
   if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
   if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`;
   return `$${value.toFixed(2)}`;
+}
+
+export function formatTvlToken(value: number, symbol: string): string {
+  if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B ${symbol}`;
+  if (value >= 1e6) return `${(value / 1e6).toFixed(2)}M ${symbol}`;
+  if (value >= 1e3) return `${(value / 1e3).toFixed(2)}K ${symbol}`;
+  return `${value.toFixed(4)} ${symbol}`;
 }
 
 export function formatYield(value: string | number | null | undefined): string {

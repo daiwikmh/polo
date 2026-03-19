@@ -1,26 +1,24 @@
 "use client";
 
-import { Bot, Lock, Wifi, WifiOff } from "lucide-react";
-import type { AgentState } from "@/types";
+import { Bot, Lock, Shield, Wifi, WifiOff } from "lucide-react";
+import type { GuardianAgentState } from "@/lib/guardian/agent";
 
-export default function AgentPanel({ state }: { state: AgentState }) {
-  const isLive =
-    state.status === "MONITORING" ||
-    state.status === "EVACUATING" ||
-    state.status === "BRIDGING";
+export default function AgentPanel({ state }: { state: GuardianAgentState }) {
+  const isLive = !["IDLE", "PAUSED", "ERROR"].includes(state.status);
 
-  const riskScore = state.lastRisk?.riskScore ?? 0;
+  const overallRisk = state.lastSnapshot?.overallRisk ?? "N/A";
+  const overallScore = state.lastSnapshot?.overallScore ?? 0;
   const riskColor =
-    riskScore < 30 ? "var(--success)" : riskScore < 60 ? "var(--warning)" : "var(--danger)";
+    overallScore < 15 ? "var(--success)" : overallScore < 40 ? "var(--warning)" : "var(--danger)";
 
   return (
     <div className="agent-panel">
       {/* Header */}
       <div className="agent-header">
-        <div className="agent-icon"><Bot /></div>
+        <div className="agent-icon"><Shield /></div>
         <div className="flex-1 min-w-0">
-          <p className="agent-name">Agent</p>
-          <p className="agent-role">Autonomous Monitor</p>
+          <p className="agent-name">Guardian</p>
+          <p className="agent-role">YO Vault Protector</p>
         </div>
         <div className="agent-status">
           {isLive
@@ -36,24 +34,24 @@ export default function AgentPanel({ state }: { state: AgentState }) {
       {/* Metrics */}
       <div className="grid grid-cols-2 gap-2">
         <div className="metric-card">
-          <p className="metric-label">Checks</p>
-          <p className="metric-value">{state.checksPerformed}</p>
+          <p className="metric-label">Scans</p>
+          <p className="metric-value">{state.scansPerformed}</p>
         </div>
         <div className="metric-card">
           <p className="metric-label">Evacuations</p>
-          <p className="metric-value">{state.evacuationHistory.length}</p>
+          <p className="metric-value">{state.evacuationsPerformed}</p>
         </div>
         <div className="metric-card">
           <p className="metric-label">Risk</p>
-          <p className="metric-value" style={{ color: state.lastRisk ? riskColor : undefined }}>
-            {state.lastRisk ? `${riskScore.toFixed(1)}%` : "--"}
+          <p className="metric-value" style={{ color: overallScore > 0 ? riskColor : undefined }}>
+            {overallScore > 0 ? `${overallScore}%` : "--"}
           </p>
         </div>
         <div className="metric-card">
-          <p className="metric-label">Last Check</p>
+          <p className="metric-label">Last Scan</p>
           <p className="metric-value">
-            {state.lastCheck
-              ? new Date(state.lastCheck).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+            {state.lastScan
+              ? new Date(state.lastScan).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
               : "--"}
           </p>
         </div>
@@ -63,14 +61,18 @@ export default function AgentPanel({ state }: { state: AgentState }) {
       <div className="space-y-1.5">
         <p className="conn-label uppercase tracking-wider">Connections</p>
         <ConnRow label="RPC" value={isLive ? "Connected" : "Idle"} ok={isLive} />
-        <ConnRow label="Flashbots" value="Shielded" ok icon />
-        <ConnRow label="LI.FI" value="v3.x" ok />
+        <ConnRow label="YO Protocol" value="v1.0" ok />
+        <ConnRow label="LI.FI" value="v3.x" ok icon />
       </div>
 
-      {/* Shield */}
+      {/* Mode */}
       <div className="shield-box">
-        <div className="shield-title"><Lock /> MEV Shield Active</div>
-        <p className="shield-text">Txs routed via Flashbots Protect. Hidden from public mempool.</p>
+        <div className="shield-title"><Lock /> Mode: {state.mode}</div>
+        <p className="shield-text">
+          {state.mode === "LIVE"
+            ? "Live mode — emergency redeems enabled."
+            : "Simulation — monitoring only, no withdrawals."}
+        </p>
       </div>
     </div>
   );

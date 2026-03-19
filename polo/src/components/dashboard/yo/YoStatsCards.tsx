@@ -20,10 +20,19 @@ function Shimmer() {
   );
 }
 
+function parseTvlStr(s: string): number {
+  const clean = (s ?? "").replace(/[$,\s]/g, "");
+  if (clean.endsWith("T")) return parseFloat(clean) * 1e12;
+  if (clean.endsWith("B")) return parseFloat(clean) * 1e9;
+  if (clean.endsWith("M")) return parseFloat(clean) * 1e6;
+  if (clean.endsWith("K")) return parseFloat(clean) * 1e3;
+  return parseFloat(clean) || 0;
+}
+
 function TvlAndApyStats() {
   const { vaults, isLoading } = useVaults();
   const baseVaults = vaults.filter((v) => v.chain.id === 8453 && YO_BASE_IDS.includes(v.id));
-  const totalTvl = baseVaults.reduce((acc, v) => acc + Number(v.tvl?.raw ?? 0), 0);
+  const totalTvl = baseVaults.reduce((acc, v) => acc + parseTvlStr(v.tvl?.formatted ?? ""), 0);
   const best = baseVaults.reduce<{ id: string; apy: number } | null>((b, v) => {
     const apy = Number(v.yield?.["7d"] ?? 0);
     return !b || apy > b.apy ? { id: v.id, apy } : b;

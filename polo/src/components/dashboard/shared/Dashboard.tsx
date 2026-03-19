@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useAccount } from "wagmi";
 import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from "lucide-react";
 import Sidebar from "./Sidebar";
 
-// Guardian imports (unchanged)
+// Guardian imports — YO vault health monitoring
 import AgentPanel from "../guardian/AgentPanel";
 import StatsCards from "../guardian/StatsCards";
 import TickChart from "../guardian/TickChart";
@@ -12,7 +13,7 @@ import RiskGauge from "../guardian/RiskGauge";
 import ActivityLog from "../guardian/ActivityLog";
 import ControlPanel from "../guardian/ControlPanel";
 import EvacuationPanel from "../guardian/EvacuationPanel";
-import type { AgentState } from "@/types";
+import type { GuardianAgentState } from "@/lib/guardian/agent";
 
 // YO Protocol imports
 import YoStatsCards from "../yo/YoStatsCards";
@@ -21,16 +22,6 @@ import YoMerklPanel from "../yo/YoMerklPanel";
 import YoAgentPanel from "../yo/YoAgentPanel";
 import YoAgentControlPanel from "../yo/YoAgentControlPanel";
 import type { YoAgentState } from "@/lib/yo/yoAgent";
-
-const INITIAL_GUARDIAN: AgentState = {
-  status: "IDLE",
-  lastCheck: 0,
-  lastRisk: null,
-  evacuationHistory: [],
-  logs: [],
-  uptime: 0,
-  checksPerformed: 0,
-};
 
 const INITIAL_YO_AGENT: YoAgentState = {
   status: "IDLE",
@@ -45,16 +36,33 @@ const INITIAL_YO_AGENT: YoAgentState = {
   tokenBalances: [],
   tradeHistory: [],
   lastSummary: "",
+  executionMode: "platform",
+};
+
+const INITIAL_GUARDIAN: GuardianAgentState = {
+  status: "IDLE",
+  mode: "SIMULATION",
+  agentAddress: "",
+  logs: [],
+  uptime: 0,
+  scansPerformed: 0,
+  evacuationsPerformed: 0,
+  lastScan: 0,
+  lastSnapshot: null,
+  evacuationHistory: [],
+  lastSummary: "",
 };
 
 export default function Dashboard() {
-  const [guardianState, setGuardianState] = useState<AgentState>(INITIAL_GUARDIAN);
+  const { address: userWalletAddress } = useAccount();
   const [yoAgentState, setYoAgentState] = useState<YoAgentState>(INITIAL_YO_AGENT);
+  const [guardianState, setGuardianState] = useState<GuardianAgentState>(INITIAL_GUARDIAN);
   const [mode, setMode] = useState<"guardian" | "yield">("yield");
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+  const [isGuardianStarting, setIsGuardianStarting] = useState(false);
 
   // Poll YO agent state every 3s when yield mode active
   useEffect(() => {
@@ -70,6 +78,21 @@ export default function Dashboard() {
     return () => clearInterval(id);
   }, [mode]);
 
+  // Poll Guardian state every 3s when guardian mode active
+  useEffect(() => {
+    if (mode !== "guardian") return;
+    const poll = async () => {
+      try {
+        const res = await fetch("/api/guardian");
+        if (res.ok) setGuardianState(await res.json());
+      } catch { /* ignore */ }
+    };
+    poll();
+    const id = setInterval(poll, 3000);
+    return () => clearInterval(id);
+  }, [mode]);
+
+  // ── YO Agent actions ──
   const handleYoAgentAction = useCallback(async (action: string, data?: Record<string, unknown>): Promise<string | null> => {
     try {
       const postRes = await fetch("/api/yo-agent", {
@@ -81,7 +104,6 @@ export default function Dashboard() {
         const body = await postRes.json().catch(() => ({}));
         return (body as { error?: string }).error ?? `HTTP ${postRes.status}`;
       }
-      // Immediately refresh state
       const res = await fetch("/api/yo-agent");
       if (res.ok) setYoAgentState(await res.json());
       return null;
@@ -93,21 +115,33 @@ export default function Dashboard() {
   const handleStart = useCallback(async () => {
     setStartError(null);
     setIsStarting(true);
-    const err = await handleYoAgentAction("start", { mode: yoAgentState.mode });
+    // Pass userAddress to trigger session-based execution when user has an active session
+    const err = await handleYoAgentAction("start", {
+      mode: yoAgentState.mode,
+      ...(userWalletAddress ? { userAddress: userWalletAddress } : {}),
+    });
     setIsStarting(false);
     if (err) setStartError(err);
-  }, [handleYoAgentAction, yoAgentState.mode]);
+  }, [handleYoAgentAction, yoAgentState.mode, userWalletAddress]);
 
-  // Guardian polling (unchanged)
-  const handleGuardianAction = async (action: string, data?: Record<string, unknown>) => {
+  // ── Guardian actions ──
+  const handleGuardianAction = useCallback(async (action: string, data?: Record<string, unknown>) => {
     try {
-      await fetch("/api/agent", {
+      await fetch("/api/guardian", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, ...data }),
       });
+      const res = await fetch("/api/guardian");
+      if (res.ok) setGuardianState(await res.json());
     } catch (e) { console.error(e); }
-  };
+  }, []);
+
+  const handleGuardianStart = useCallback(async () => {
+    setIsGuardianStarting(true);
+    await handleGuardianAction("start", { mode: guardianState.mode });
+    setIsGuardianStarting(false);
+  }, [handleGuardianAction, guardianState.mode]);
 
   const isYield = mode === "yield";
 
@@ -115,7 +149,6 @@ export default function Dashboard() {
     <div style={{
       display: "flex",
       height: "100vh",
-      overflow: "hidden",
       background: "#000",
     }}>
       {/* Sidebar */}
@@ -123,20 +156,24 @@ export default function Dashboard() {
         <Sidebar
           mode={mode}
           onModeChange={setMode}
-          simulationMode={yoAgentState.mode}
-          onSimulationModeChange={(m) => handleYoAgentAction("set-mode", { mode: m })}
+          simulationMode={isYield ? yoAgentState.mode : guardianState.mode}
+          onSimulationModeChange={(m) =>
+            isYield
+              ? handleYoAgentAction("set-mode", { mode: m })
+              : handleGuardianAction("set-mode", { mode: m })
+          }
         />
       )}
 
       {/* Main content */}
       <main
-        className="yo-right-panel"
         style={{
           flex: 1,
           minWidth: 0,
+          height: "100vh",
           transition: "margin 0.3s",
           marginLeft: leftOpen ? 220 : 0,
-          overflowY: "auto",
+          overflowY: "scroll",
         }}
       >
         {/* Top bar */}
@@ -167,7 +204,7 @@ export default function Dashboard() {
                 {isYield ? "YO Yield" : "Guardian"}
               </h2>
               <p style={{ fontSize: 10, color: "#525252", margin: 0, marginTop: 1 }}>
-                {isYield ? "ERC-4626 Vaults · Base Chain · Partner 9999" : "Autonomous LP Guardian"}
+                {isYield ? "ERC-4626 Vaults · Base Chain · Partner 9999" : "YO Vault Health Monitor · Multi-Chain"}
               </p>
             </div>
           </div>
@@ -185,12 +222,12 @@ export default function Dashboard() {
             }}>
               <div style={{
                 width: 6, height: 6, borderRadius: "50%",
-                background: isYield ? "#D6FF34" : "#525252",
-                boxShadow: isYield ? "0 0 6px rgba(214,255,52,0.5)" : "none",
-                animation: isYield ? "pulse 2s infinite" : "none",
+                background: (isYield ? yoAgentState.status : guardianState.status) !== "IDLE" ? "#D6FF34" : "#525252",
+                boxShadow: (isYield ? yoAgentState.status : guardianState.status) !== "IDLE" ? "0 0 6px rgba(214,255,52,0.5)" : "none",
+                animation: (isYield ? yoAgentState.status : guardianState.status) !== "IDLE" ? "pulse 2s infinite" : "none",
               }} />
               <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "#525252" }}>
-                {isYield ? "LIVE" : "IDLE"}
+                {(isYield ? yoAgentState.status : guardianState.status) !== "IDLE" ? "LIVE" : "IDLE"}
               </span>
             </div>
 
@@ -213,9 +250,15 @@ export default function Dashboard() {
               <YoStatsCards />
               <YoVaultScanner />
 
-              {/* Merkl + Agent row */}
+              {/* Agent control + Log row */}
               <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 16 }}>
-                <YoMerklPanel />
+                <YoMerklPanel
+                  state={yoAgentState}
+                  onAction={handleYoAgentAction}
+                  isStarting={isStarting}
+                  startError={startError}
+                  onStart={handleStart}
+                />
                 <div style={{
                   background: "#0a0a08",
                   border: "1px solid #1a1a18",
@@ -229,26 +272,34 @@ export default function Dashboard() {
             </>
           ) : (
             <>
+              {/* Row 1 — stat squares */}
               <StatsCards state={guardianState} />
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2">
-                  <TickChart risk={guardianState.lastRisk} />
+
+              {/* Row 2 — chart + gauge & control */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 16 }}>
+                <TickChart vaults={guardianState.lastSnapshot?.vaults ?? []} />
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <RiskGauge snapshot={guardianState.lastSnapshot} />
+                  <ControlPanel
+                    state={guardianState}
+                    onAction={handleGuardianAction}
+                    isStarting={isGuardianStarting}
+                    onStart={handleGuardianStart}
+                  />
                 </div>
-                <RiskGauge risk={guardianState.lastRisk} />
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <ControlPanel state={guardianState} onAction={handleGuardianAction} />
-                <div className="col-span-2">
-                  <ActivityLog logs={guardianState.logs} />
-                </div>
+
+              {/* Row 3 — activity log + evacuations */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <ActivityLog logs={guardianState.logs} />
+                <EvacuationPanel evacuations={guardianState.evacuationHistory} />
               </div>
-              <EvacuationPanel evacuations={guardianState.evacuationHistory} />
             </>
           )}
         </div>
       </main>
 
-      {/* Right panel — YO Agent control */}
+      {/* Right panel — YO Agent control (yield) or Guardian info (guardian) */}
       {rightOpen && isYield && (
         <aside className="yo-right-panel" style={{
           width: 300,
@@ -262,13 +313,12 @@ export default function Dashboard() {
       )}
 
       {rightOpen && !isYield && (
-        <aside style={{
-          width: 320,
+        <aside className="yo-right-panel" style={{
+          width: 300,
           flexShrink: 0,
-          margin: "12px 12px 12px 0",
-          position: "sticky",
-          top: 12,
-          alignSelf: "flex-start",
+          height: "100vh",
+          overflowY: "auto",
+          padding: "12px 12px 12px 0",
         }}>
           <div className="card">
             <AgentPanel state={guardianState} />
@@ -278,4 +328,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

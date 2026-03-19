@@ -1,30 +1,8 @@
 import type { Metadata } from "next";
-import {
-  IBM_Plex_Sans,
-  IBM_Plex_Mono,
-  Bebas_Neue,
-  Space_Grotesk,
-  JetBrains_Mono,
-} from "next/font/google";
+import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/dashboard/shared/Providers";
-import { SmoothScroll } from "@/components/landing/SmoothScroll";
 
-const ibmPlexSans = IBM_Plex_Sans({
-  weight: ["400", "500", "600", "700"],
-  subsets: ["latin"],
-  variable: "--font-ibm-plex-sans",
-});
-const ibmPlexMono = IBM_Plex_Mono({
-  weight: ["400", "500"],
-  subsets: ["latin"],
-  variable: "--font-ibm-plex-mono",
-});
-const bebasNeue = Bebas_Neue({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-bebas",
-});
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-dashboard-sans",
   subsets: ["latin"],
@@ -50,12 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark bg-background">
       <body
-        className={`${ibmPlexSans.variable} ${ibmPlexMono.variable} ${bebasNeue.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased overflow-x-hidden`}
+        className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased overflow-x-hidden`}
       >
-        <div className="noise-overlay" aria-hidden="true" />
-        <Providers>
-          <SmoothScroll>{children}</SmoothScroll>
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
